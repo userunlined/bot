@@ -10,10 +10,10 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} online!')
+    print(f'{bot.user} está online no Railway!')
 
 @bot.command()
 async def ping(ctx):
-    await ctx.send('Pong!')
+    await ctx.send('Pong! Funcionando 24/7.')
 
 bot.run(os.getenv('DISCORD_TOKEN'))
