@@ -89,74 +89,50 @@ class TicketView(discord.ui.View):
         super().__init__(timeout=None)
 
     @discord.ui.select(
-        placeholder="Escolha o tipo de ticket...",
-        options=[
-            discord.SelectOption(label="Dúvidas", value="duvidas", emoji="❓"),
-            discord.SelectOption(label="Denúncias", value="denuncias", emoji="🚨"),
-        ]
+    placeholder="Escolha o tipo de ticket...",
+    options=[
+        discord.SelectOption(label="Dúvidas", value="duvidas", emoji="❓"),
+        discord.SelectOption(label="Denúncias", value="denuncias", emoji="🚨"),
+    ]
+)
+async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
+    tipo = select.values[0]
+    user = interaction.user
+    guild = interaction.guild
+
+    # Contador
+    count = 1
+    for ch in guild.channels:
+        if isinstance(ch, discord.TextChannel) and ch.name.startswith(f"{tipo}-"):
+            try:
+                num = int(ch.name.split('-')[1])
+                count = max(count, num + 1)
+            except:
+                pass
+    nome_canal = f"{tipo}-{count:02d}"
+
+    # Perms
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(view_channel=False),
+        user: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+    }
+
+    # Cria canal
+    category = guild.get_channel(TICKET_CATEGORY_ID)
+    canal = await guild.create_text_channel(
+        name=nome_canal,
+        overwrites=overwrites,
+        category=category
     )
-    async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
-        tipo = select.values[0]
-        user = interaction.user
-        guild = interaction.guild
 
-        # DEFER pra evitar timeout
-        await interaction.response.defer(ephemeral=True)
+    # Mensagem no novo ticket
+    embed = discord.Embed(title=f"🎫 {tipo.title()}", description=f"{user.mention}, seu ticket foi criado!", color=0x00ff00)
+    close_view = TicketCloseView()
+    await canal.send(embed=embed, view=close_view)
 
-        # Limpa chat (limit 100)
-        deleted = await interaction.channel.purge(limit=100)
-        
-        # Contador tickets
-        count = 1
-        for ch in guild.channels:
-            if isinstance(ch, discord.TextChannel) and ch.name.startswith(f"{tipo}-"):
-                try:
-                    num = int(ch.name.split('-')[1])
-                    count = max(count, num + 1)
-                except:
-                    pass
-        nome_canal = f"{tipo}-{count:02d}"
-
-        # Perms canal novo
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            user: discord.PermissionOverwrite(view_channel=True, send_messages=True, attach_files=True),
-        }
-
-        # Cria canal
-        category = guild.get_channel(TICKET_CATEGORY_ID)
-        canal = await guild.create_text_channel(
-            name=nome_canal,
-            overwrites=overwrites,
-            category=category,
-            topic=f"Ticket {tipo} - {user}"
-        )
-
-        embed_criado = discord.Embed(
-            description=f"✅ **{tipo.title()}** criado: {canal.mention}",
-            color=0x00ff00
-        )
-        await interaction.followup.send(embed=embed_criado, ephemeral=True)
-
-        # Mensagem no ticket novo
-        embed_ticket = discord.Embed(
-            title=f"🎫 {tipo.title()}",
-            description=f"{user.mention}, seu ticket está pronto!",
-            color=0x00ff00
-        )
-        close_view = TicketCloseView()
-        await canal.send(embed=embed_ticket, view=close_view)
-
-class TicketCloseView(discord.ui.View):
-    @discord.ui.button(label="🔒 Fechar", style=discord.ButtonStyle.danger, emoji="🔒")
-    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = discord.Embed(
-            title="🔒 Fechando", 
-            description="Ticket será deletado em 5 segundos...", 
-            color=0xff0000
-        )
-        await interaction.response.send_message(embed=embed, ephemeral=False)
-        await interaction.channel.delete(delay=5)
+    # Resposta + RESET select (volta placeholder)
+    embed_res = discord.Embed(description=f"✅ **{tipo.title()}** criado: {canal.mention}", color=0x00ff00)
+    await interaction.response.send_message(embed=embed_res, ephemeral=True)
 
 # --------------- COMANDO DE TESTE ----------------
 @bot.command()
