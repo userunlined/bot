@@ -133,6 +133,14 @@ async def select_callback(self, interaction: discord.Interaction, select: discor
     # Resposta + RESET select (volta placeholder)
     embed_res = discord.Embed(description=f"✅ **{tipo.title()}** criado: {canal.mention}", color=0x00ff00)
     await interaction.response.send_message(embed=embed_res, ephemeral=True)
+    class TicketCloseView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label="🔒 Fechar", style=discord.ButtonStyle.danger, emoji="🔒")
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("🔒 Ticket fechando em 5s...")
+        await interaction.channel.delete(delay=5)
 
 # --------------- COMANDO DE TESTE ----------------
 @bot.command()
