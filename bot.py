@@ -90,63 +90,73 @@ class TicketView(discord.ui.View):
 
     @discord.ui.select(
         placeholder="Escolha o tipo de ticket...",
-        min_values=1,
-        max_values=1,
         options=[
             discord.SelectOption(label="Dúvidas", value="duvidas", emoji="❓"),
             discord.SelectOption(label="Denúncias", value="denuncias", emoji="🚨"),
-        ],
+        ]
     )
     async def select_callback(self, interaction: discord.Interaction, select: discord.ui.Select):
         tipo = select.values[0]
         user = interaction.user
         guild = interaction.guild
 
-        # Limpa chat do ticket
-        await interaction.channel.purge(limit=None)
+        # DEFER pra evitar timeout
+        await interaction.response.defer(ephemeral=True)
 
-        # Contador
+        # Limpa chat (limit 100)
+        deleted = await interaction.channel.purge(limit=100)
+        
+        # Contador tickets
         count = 1
-        for channel in guild.text_channels:
-            if channel.name.startswith(f"{tipo}-"):
-                count = max(count, int(channel.name.split('-')[1]) + 1)
-
+        for ch in guild.channels:
+            if isinstance(ch, discord.TextChannel) and ch.name.startswith(f"{tipo}-"):
+                try:
+                    num = int(ch.name.split('-')[1])
+                    count = max(count, num + 1)
+                except:
+                    pass
         nome_canal = f"{tipo}-{count:02d}"
 
-        # Permissões: só user + @everyone deny
+        # Perms canal novo
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(view_channel=False),
             user: discord.PermissionOverwrite(view_channel=True, send_messages=True, attach_files=True),
         }
 
         # Cria canal
-        category = guild.get_channel(TICKET_CATEGORY_ID) or None
+        category = guild.get_channel(TICKET_CATEGORY_ID)
         canal = await guild.create_text_channel(
             name=nome_canal,
             overwrites=overwrites,
             category=category,
-            topic=f"Ticket de {user} | {tipo}",
-            reason=f"Ticket {tipo} criado"
+            topic=f"Ticket {tipo} - {user}"
         )
 
-        embed = discord.Embed(title=f"🎫 {tipo.title()}", description=f"{user.mention}, seu ticket foi criado!", color=0x00ff00)
-        view_close = TicketCloseView()
-        await canal.send(embed=embed, view=view_close)
+        embed_criado = discord.Embed(
+            description=f"✅ **{tipo.title()}** criado: {canal.mention}",
+            color=0x00ff00
+        )
+        await interaction.followup.send(embed=embed_criado, ephemeral=True)
 
-        embed_res = discord.Embed(description=f"✅ **Ticket criado**: {canal.mention}", color=0x00ff00)
-        await interaction.response.send_message(embed=embed_res, ephemeral=True)
+        # Mensagem no ticket novo
+        embed_ticket = discord.Embed(
+            title=f"🎫 {tipo.title()}",
+            description=f"{user.mention}, seu ticket está pronto!",
+            color=0x00ff00
+        )
+        close_view = TicketCloseView()
+        await canal.send(embed=embed_ticket, view=close_view)
 
 class TicketCloseView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label="🔒 Fechar Ticket", style=discord.ButtonStyle.danger, emoji="🔒")
-    async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = discord.Embed(title="🔒 Ticket Fechado", description="Este ticket será deletado em 5s.", color=0xff0000)
-        await interaction.response.send_message(embed=embed)
+    @discord.ui.button(label="🔒 Fechar", style=discord.ButtonStyle.danger, emoji="🔒")
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = discord.Embed(
+            title="🔒 Fechando", 
+            description="Ticket será deletado em 5 segundos...", 
+            color=0xff0000
+        )
+        await interaction.response.send_message(embed=embed, ephemeral=False)
         await interaction.channel.delete(delay=5)
-
-# Comando REMOVIDO - painel auto no on_ready
 
 # --------------- COMANDO DE TESTE ----------------
 @bot.command()
