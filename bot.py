@@ -29,13 +29,31 @@ async def verifica(ctx):
 
 @bot.event
 async def on_raw_reaction_add(payload):
-    if payload.emoji.name == '🏴‍☠️' and not payload.member.bot:
-        guild = bot.get_guild(payload.guild_id)
-        member = guild.get_member(payload.user_id)
-        role = guild.get_role(VERIF_ROLE)
-        if role and role not in member.roles:
-            await member.add_roles(role)
-            await member.send(f"✅ **Verificado!** Você ganhou o cargo `{role.name}`.")
+    if str(payload.emoji) == '🏴‍☠️' and payload.user_id != bot.user.id:
+        try:
+            guild = bot.get_guild(payload.guild_id)
+            if not guild:
+                print("Guild not found")
+                return
+            member = guild.get_member(payload.user_id)
+            role = guild.get_role(VERIF_ROLE)
+            if not role:
+                print("Role not found")
+                return
+            if role in member.roles:
+                print("Already verified")
+                return
+            print(f"Adding role to {member.name}")
+            await member.add_roles(role, reason="Verificação")
+            await member.send("✅ Verificado!")
+        except Exception as e:
+            print(f"Error: {e}")
+
+# Adicione no final antes bot.run:
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRole):
+        await ctx.send("❌ Só admins podem usar !verifica!")
 
 @bot.command()
 async def ping(ctx):
