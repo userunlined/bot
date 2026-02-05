@@ -15,6 +15,7 @@ VERIF_ROLE = 1469007626938355805       # Cargo verificado
 ADMIN_ROLE = 1469006955992453151      # Admin (usa !verifica)
 TICKET_ADMIN_ROLE = 1469006955992453151  # Mesmo admin (usa !ticket)
 TICKET_CATEGORY_ID = 1469073649654042655  # <<< TROCAR pelo ID da categoria
+PANEL_CHANNEL = 1469006850681995455  # Canal do painel
 
 # ---------------- ON_READY ----------------
 @bot.event
