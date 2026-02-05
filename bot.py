@@ -19,11 +19,11 @@ async def on_ready():
 @commands.has_role(ADMIN_ROLE)
 async def verifica(ctx):
     embed = discord.Embed(
-        title="🏴‍☠️ Painel de Verificação",
-        description="**Clique no emoji 🏴‍☠️ para ganhar o cargo verificado!**",
+        title="🏴‍☠️ Verificação",
+        description="**Clique no emoji 🏴‍☠️ para ganhar acesso ao servidor!**",
         color=0x00ff00
     )
-    embed.set_footer(text="Apenas uma reação por usuário!")
+    embed.set_footer(text="Seja Bem-Vindo!")
     msg = await ctx.send(embed=embed)
     await msg.add_reaction("🏴‍☠️")
 
