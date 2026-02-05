@@ -17,10 +17,11 @@ TICKET_ADMIN_ROLE = 1469006955992453151  # Mesmo admin (usa !ticket)
 TICKET_CATEGORY_ID = 1469073649654042655  # <<< TROCAR pelo ID da categoria
 
 # ---------------- ON_READY ----------------
-@bot.event
-async def on_ready():
-    bot.add_view(TicketView())  # mantém o painel de ticket após restart
-    print(f'{bot.user} está online no Railway!')
+channel = bot.get_channel(PANEL_CHANNEL)
+await channel.purge(limit=50)  # limpa 50 msgs antigas
+embed = discord.Embed(title="🎫 Tickets", description="Clique para abrir ticket!", color=0x3498db)
+view = TicketView()
+await channel.send(embed=embed, view=view)
 
 # --------------- VERIFICAÇÃO ----------------
 @bot.command()
